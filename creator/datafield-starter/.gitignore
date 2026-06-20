@@ -1,0 +1,13 @@
+# Connect IQ build output
+bin/
+*.prg
+*.prg.debug.xml
+*.iq
+
+# Developer key — keep PRIVATE and BACKED UP. Never commit it.
+developer_key
+*.pem
+*.der
+
+# OS / editor noise
+.DS_Store

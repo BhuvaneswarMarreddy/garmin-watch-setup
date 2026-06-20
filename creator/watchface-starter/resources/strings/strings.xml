@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<strings>
+    <!-- The name shown in Garmin Connect IQ / on the watch. -->
+    <string id="AppName">Venu 3 Custom Face</string>
+
+    <!-- Settings: face style -->
+    <string id="FaceStyleTitle">Face Style</string>
+    <string id="StyleDigital">Digital</string>
+    <string id="StyleAnalog">Analog</string>
+
+    <!-- Settings: accent color -->
+    <string id="AccentColorTitle">Accent Color</string>
+    <string id="ColorWhite">White</string>
+    <string id="ColorBlue">Blue</string>
+    <string id="ColorGreen">Green</string>
+    <string id="ColorOrange">Orange</string>
+    <string id="ColorRed">Red</string>
+
+    <!-- Settings: toggles -->
+    <string id="ShowSecondsTitle">Show Seconds (when awake)</string>
+    <string id="ShowStepsTitle">Show Steps</string>
+    <string id="ShowBatteryTitle">Show Battery</string>
+</strings>

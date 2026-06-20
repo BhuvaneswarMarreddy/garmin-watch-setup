@@ -1,0 +1,2 @@
+# Build configuration for the data field project.
+project.manifest = manifest.xml

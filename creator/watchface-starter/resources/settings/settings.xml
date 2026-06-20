@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+    The settings UI shown in the Garmin Connect phone app (and the simulator).
+    Each <setting> binds to a property defined in properties.xml.
+-->
+<settings>
+    <setting propertyKey="@Properties.FaceStyle" title="@Strings.FaceStyleTitle">
+        <settingConfig type="list">
+            <listEntry value="0">@Strings.StyleDigital</listEntry>
+            <listEntry value="1">@Strings.StyleAnalog</listEntry>
+        </settingConfig>
+    </setting>
+
+    <setting propertyKey="@Properties.AccentColor" title="@Strings.AccentColorTitle">
+        <settingConfig type="list">
+            <listEntry value="0">@Strings.ColorWhite</listEntry>
+            <listEntry value="1">@Strings.ColorBlue</listEntry>
+            <listEntry value="2">@Strings.ColorGreen</listEntry>
+            <listEntry value="3">@Strings.ColorOrange</listEntry>
+            <listEntry value="4">@Strings.ColorRed</listEntry>
+        </settingConfig>
+    </setting>
+
+    <setting propertyKey="@Properties.ShowSeconds" title="@Strings.ShowSecondsTitle">
+        <settingConfig type="boolean"/>
+    </setting>
+
+    <setting propertyKey="@Properties.ShowSteps" title="@Strings.ShowStepsTitle">
+        <settingConfig type="boolean"/>
+    </setting>
+
+    <setting propertyKey="@Properties.ShowBattery" title="@Strings.ShowBatteryTitle">
+        <settingConfig type="boolean"/>
+    </setting>
+</settings>

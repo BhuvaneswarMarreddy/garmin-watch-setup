@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+    Default values for each user setting. These are read at runtime with
+    Application.Properties.getValue("<id>"). The settings UI that lets the user
+    change them is defined in settings.xml.
+-->
+<properties>
+    <property id="FaceStyle"   type="number">0</property>   <!-- 0 = Digital, 1 = Analog -->
+    <property id="AccentColor" type="number">0</property>   <!-- index into the color list -->
+    <property id="ShowSeconds" type="boolean">true</property>
+    <property id="ShowSteps"   type="boolean">true</property>
+    <property id="ShowBattery" type="boolean">true</property>
+</properties>

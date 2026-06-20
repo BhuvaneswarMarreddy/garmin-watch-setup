@@ -1,0 +1,4 @@
+# Build configuration (the "jungle" file).
+# The defaults already pull in everything under source/ and resources/,
+# so all we need to declare is where the manifest lives.
+project.manifest = manifest.xml
