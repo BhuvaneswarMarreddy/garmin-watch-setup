@@ -1,5 +1,6 @@
 import Toybox.Activity;
 import Toybox.Lang;
+import Toybox.Time;
 import Toybox.WatchUi;
 
 // A SimpleDataField lets the system handle the layout — you just set a `label`
@@ -14,7 +15,7 @@ class HeartRateFieldView extends WatchUi.SimpleDataField {
 
     // Called roughly once per second during an activity. Whatever you return is
     // shown in the field. Return a number, a string, or null.
-    function compute(info as Activity.Info) as Numeric or Duration or String or Null {
+    function compute(info as Activity.Info) as Numeric or Time.Duration or String or Null {
         if (info has :currentHeartRate && info.currentHeartRate != null) {
             return info.currentHeartRate;
         }

@@ -8,6 +8,17 @@
     <string id="StyleDigital">Digital</string>
     <string id="StyleAnalog">Analog</string>
 
+    <!-- Settings: hand style -->
+    <string id="HandStyleTitle">Hand Style</string>
+    <string id="StyleOutline">Outline</string>
+    <string id="StyleFilled">Filled</string>
+
+    <!-- Settings: hand color -->
+    <string id="HandColorTitle">Hand Color</string>
+    <string id="ColorIvory">Ivory</string>
+    <string id="ColorGold">Gold</string>
+    <string id="ColorRoseGold">Rose Gold</string>
+
     <!-- Settings: accent color -->
     <string id="AccentColorTitle">Accent Color</string>
     <string id="ColorWhite">White</string>
@@ -16,7 +27,12 @@
     <string id="ColorOrange">Orange</string>
     <string id="ColorRed">Red</string>
 
-    <!-- Settings: toggles -->
+    <!-- Settings: title text + toggles -->
+    <string id="TitleTextTitle">Title Text</string>
+    <string id="TitleSizeTitle">Title Size (8-40)</string>
+    <string id="ShowTitleTitle">Show Title</string>
+    <string id="ShowDayTitle">Show Day</string>
+    <string id="ShowDateTitle">Show Date</string>
     <string id="ShowSecondsTitle">Show Seconds (when awake)</string>
     <string id="ShowStepsTitle">Show Steps</string>
     <string id="ShowBatteryTitle">Show Battery</string>

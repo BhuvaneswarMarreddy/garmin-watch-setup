@@ -4,10 +4,34 @@
     Each <setting> binds to a property defined in properties.xml.
 -->
 <settings>
+    <setting propertyKey="@Properties.Title" title="@Strings.TitleTextTitle">
+        <settingConfig type="alphaNumeric" maxLength="20"/>
+    </setting>
+
+    <setting propertyKey="@Properties.TitleSize" title="@Strings.TitleSizeTitle">
+        <settingConfig type="numeric"/>
+    </setting>
+
     <setting propertyKey="@Properties.FaceStyle" title="@Strings.FaceStyleTitle">
         <settingConfig type="list">
             <listEntry value="0">@Strings.StyleDigital</listEntry>
             <listEntry value="1">@Strings.StyleAnalog</listEntry>
+        </settingConfig>
+    </setting>
+
+    <setting propertyKey="@Properties.HandStyle" title="@Strings.HandStyleTitle">
+        <settingConfig type="list">
+            <listEntry value="0">@Strings.StyleOutline</listEntry>
+            <listEntry value="1">@Strings.StyleFilled</listEntry>
+        </settingConfig>
+    </setting>
+
+    <setting propertyKey="@Properties.HandColor" title="@Strings.HandColorTitle">
+        <settingConfig type="list">
+            <listEntry value="0">@Strings.ColorIvory</listEntry>
+            <listEntry value="1">@Strings.ColorGold</listEntry>
+            <listEntry value="2">@Strings.ColorWhite</listEntry>
+            <listEntry value="3">@Strings.ColorRoseGold</listEntry>
         </settingConfig>
     </setting>
 
@@ -19,6 +43,18 @@
             <listEntry value="3">@Strings.ColorOrange</listEntry>
             <listEntry value="4">@Strings.ColorRed</listEntry>
         </settingConfig>
+    </setting>
+
+    <setting propertyKey="@Properties.ShowTitle" title="@Strings.ShowTitleTitle">
+        <settingConfig type="boolean"/>
+    </setting>
+
+    <setting propertyKey="@Properties.ShowDay" title="@Strings.ShowDayTitle">
+        <settingConfig type="boolean"/>
+    </setting>
+
+    <setting propertyKey="@Properties.ShowDate" title="@Strings.ShowDateTitle">
+        <settingConfig type="boolean"/>
     </setting>
 
     <setting propertyKey="@Properties.ShowSeconds" title="@Strings.ShowSecondsTitle">
