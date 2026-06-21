@@ -11,6 +11,7 @@
         type="watchface"
         name="@Strings.AppName"
         entry="VenuWatchFaceApp"
+        launcherIcon="@Drawables.LauncherIcon"
         minApiLevel="3.2.0">
 
         <!-- Target devices. venu3 = 454x454 AMOLED, venu3s = 390x390 AMOLED. -->

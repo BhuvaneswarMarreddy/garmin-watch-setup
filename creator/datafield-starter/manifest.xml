@@ -10,6 +10,7 @@
         type="datafield"
         name="@Strings.AppName"
         entry="HeartRateFieldApp"
+        launcherIcon="@Drawables.LauncherIcon"
         minApiLevel="3.2.0">
 
         <iq:products>

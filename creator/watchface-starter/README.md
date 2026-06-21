@@ -1,43 +1,56 @@
-# Venu 3 Custom Watch Face — starter project
+# Bhuvi Vintage Analog — Venu 3 / Venu 3S watch face
 
-A Connect IQ watch face for the **Garmin Venu 3 / Venu 3S** with:
-- **Digital and analog** styles (switchable in settings)
-- **User settings** (configured in the Garmin Connect phone app): face style,
-  accent color, and show/hide toggles for seconds, steps, and battery
-- **Always-on (low-power) mode** that strips the face down to protect the AMOLED
-  screen and save battery
+**Version 1.2.0** (set the Connect IQ Store *App Version* field to `1.2.0` on upload).
 
-## Run it
-1. Open this folder in VS Code (with the Monkey C extension installed).
-2. Press <kbd>F5</kbd> → choose **Venu 3** → the simulator opens.
+A vintage-styled Connect IQ watch face for the **Garmin Venu 3 / Venu 3S**, with a
+Rolex-inspired layout and fully configurable settings.
 
-(Full toolchain install steps are in the parent folder's `README.md`.)
+## The face (analog)
+- **Title** at 12 o'clock (gilt-gold) — your custom text
+- **Pointed lance hands** (outline or filled), ivory/gold/white/rose-gold
+- **Gold center hub** + **gold ticking second hand**
+- **Date** number window at **3 o'clock** (Rolex Datejust / Cyclops style)
+- **Day-of-week** window at **9 o'clock** (Day-Date style)
+- Black dial (AMOLED-friendly), antialiased
+- **Always-on (low-power) mode:** same hands at the same size, dimmed to grey,
+  complications/title hidden — keeps lit pixels low to protect the AMOLED
+- A **Digital** layout is also included (time, date, battery, steps)
 
-## Trying the features in the simulator
-- **Always-on / low-power look:** in the simulator menu, toggle the display
-  power state (look for *Always On Display* / *Low Power Mode* under the
-  simulator's display or watch menu). The face redraws with fewer lit pixels.
-- **Settings (themes/toggles):** in the simulator, open the app settings editor
-  (under the simulator's **Settings** menu) to change Face Style, Accent Color,
-  etc. On a real watch these appear in **Garmin Connect → your watch face →
-  Settings**.
+## Settings (Garmin Connect → watch face → Settings, or the simulator's Settings menu)
+| Setting | Type | Options (default) |
+|---|---|---|
+| Title Text | text | any text (`B H U V I`) |
+| Title Size | number | 8–40 (`18`) |
+| Face Style | list | Digital / **Analog** |
+| Hand Style | list | **Outline** / Filled |
+| Hand Color | list | **Ivory** / Gold / White / Rose Gold |
+| Accent Color | list | White / Blue / Green / Orange / Red (digital) |
+| Show Title | toggle | on |
+| Show Day | toggle | on |
+| Show Date | toggle | on |
+| Show Seconds | toggle | on (awake only) |
+| Show Steps | toggle | off (digital) |
+| Show Battery | toggle | on (digital) |
+
+## Build / run
+```bash
+# from this folder, with the SDK's monkeyc on PATH and Java available
+monkeyc -d venu3 -f monkey.jungle -o out.prg -y ~/garmin/developer_key -l 3   # device/sim build
+monkeyc -e      -f monkey.jungle -o Bhuvi-Venu3-WatchFace.iq -y ~/garmin/developer_key -l 3   # store package
+```
+- `-l 3` is the strict type-check level (release quality — the project builds clean at this level).
+- In VS Code with the Monkey C extension: press **F5** to run in the simulator.
 
 ## Files
-- `manifest.xml` — app id, type=`watchface`, targets `venu3` + `venu3s`.
-- `monkey.jungle` — build config.
-- `source/VenuWatchFaceApp.mc` — entry point; redraws on settings change.
-- `source/VenuWatchFaceView.mc` — **the design**: `drawDigital()`, `drawAnalog()`,
-  and the low-power branch all live here.
-- `resources/settings/properties.xml` — default values for each setting.
-- `resources/settings/settings.xml` — the settings UI shown in Garmin Connect.
-- `resources/strings/strings.xml` — app name + setting labels.
-- `resources/drawables/` — launcher icon (swap in your own PNG art).
+- `source/VenuWatchFaceApp.mc` — entry point (redraws on settings change).
+- `source/VenuWatchFaceView.mc` — the whole face: digital + analog drawing, hands, complications, helpers.
+- `resources/settings/` — `properties.xml` (defaults) + `settings.xml` (the settings UI).
+- `resources/strings/strings.xml` — app name + all setting labels.
+- `resources/drawables/` — launcher icon.
 
 ## Notes
-- The `id` in `manifest.xml` was pre-generated for this project. Start a
-  brand-new project from scratch later and let the extension generate a fresh id.
-- You'll be prompted for a **developer key** on first build — see parent README, Step 5.
-- **Live seconds:** they tick only while the watch is awake (the system calls
-  `onUpdate` ~1×/sec then). For a *ticking second hand in always-on mode* you'd
-  add `onPartialUpdate(dc)` with a clip region — see Garmin's "Analog" sample and
-  the Core Topics → "Watch Faces" docs.
+- Hands/complications are gold-accented; colours are 24-bit (full-colour AMOLED).
+- The title/day use the device's scalable **RobotoRegular** vector font, so the
+  title size can be any pixel value.
+- Saved settings persist on device — changing a *default* only affects a fresh
+  install; existing installs keep their chosen values.
