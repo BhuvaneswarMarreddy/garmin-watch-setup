@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+    Connect IQ application manifest for "Sensor Lab".
+    A watch-app (not a watch face) that displays the maximum set of live
+    sensor readings on the Venu 3 / Venu 3S, paginated across 4 screens.
+-->
+<iq:manifest xmlns:iq="http://www.garmin.com/xml/connectiq" version="3">
+    <iq:application
+        id="86d6f6dd46a7494bbbf41bfd0d47b8a2"
+        type="watch-app"
+        name="@Strings.AppName"
+        entry="SensorLabApp"
+        launcherIcon="@Drawables.LauncherIcon"
+        minApiLevel="5.1.1">
+
+        <!-- Target devices. venu3 = 454x454 AMOLED, venu3s = 390x390 AMOLED. -->
+        <iq:products>
+            <iq:product id="venu3"/>
+            <iq:product id="venu3s"/>
+        </iq:products>
+
+        <!-- Permissions required by the reads we surface. -->
+        <iq:permissions>
+            <iq:uses-permission id="Sensor"/>
+            <iq:uses-permission id="SensorHistory"/>
+            <iq:uses-permission id="UserProfile"/>
+            <iq:uses-permission id="Positioning"/>
+        </iq:permissions>
+
+        <!-- Supported languages. -->
+        <iq:languages>
+            <iq:language>eng</iq:language>
+        </iq:languages>
+    </iq:application>
+</iq:manifest>

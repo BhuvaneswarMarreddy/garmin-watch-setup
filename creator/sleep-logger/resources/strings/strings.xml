@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<strings>
+    <!-- The name shown in Garmin Connect IQ / on the watch. -->
+    <string id="AppName">Sleep Logger</string>
+</strings>

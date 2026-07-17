@@ -1,0 +1,2 @@
+# Build config for the Nudge app.
+project.manifest = manifest.xml
