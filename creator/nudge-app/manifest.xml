@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+    Nudge — a small Connect IQ WATCH APP for the Garmin Venu 3 / Venu 3S.
+    A learning app for on-device alerts ("notifications"): vibrate, tone,
+    backlight, and toast. type="watch-app" (a launchable app, not a watch face).
+-->
+<iq:manifest xmlns:iq="http://www.garmin.com/xml/connectiq" version="3">
+    <iq:application
+        id="cd5f7ba7eaea44d7ace96def1569c470"
+        type="watch-app"
+        name="@Strings.AppName"
+        entry="NudgeApp"
+        launcherIcon="@Drawables.LauncherIcon"
+        minApiLevel="3.4.0">
+
+        <iq:products>
+            <iq:product id="venu3"/>
+            <iq:product id="venu3s"/>
+        </iq:products>
+
+        <!-- Vibrate / tone / backlight / toast need no special permissions. -->
+        <iq:permissions/>
+
+        <iq:languages>
+            <iq:language>eng</iq:language>
+        </iq:languages>
+    </iq:application>
+</iq:manifest>

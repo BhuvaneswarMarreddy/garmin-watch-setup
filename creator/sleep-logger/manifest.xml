@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+    Connect IQ application manifest for "Sleep Logger".
+    A foreground watch-app (NOT a watch face, NOT a background service) that the
+    user starts at bedtime. It streams accel + RR overnight, logs one compact
+    record per 30 s epoch to Application.Storage, and on "Stop / Wake" runs an
+    on-watch staging heuristic to produce a sleep/wake + Light/Deep/REM timeline.
+
+    Foreground (not background) because Connect IQ background temporal events have
+    a ~5-minute minimum interval, far too coarse for 30 s actigraphy epochs.
+-->
+<iq:manifest xmlns:iq="http://www.garmin.com/xml/connectiq" version="3">
+    <iq:application
+        id="22f36d1f4421643effafbfbf0cb58a6a"
+        type="watch-app"
+        name="@Strings.AppName"
+        entry="SleepLoggerApp"
+        launcherIcon="@Drawables.LauncherIcon"
+        minApiLevel="5.1.1">
+
+        <!-- Target devices. venu3 = 454x454 AMOLED, venu3s = 390x390 AMOLED. -->
+        <iq:products>
+            <iq:product id="venu3"/>
+            <iq:product id="venu3s"/>
+        </iq:products>
+
+        <!-- Permissions required by the overnight reads. -->
+        <iq:permissions>
+            <iq:uses-permission id="Sensor"/>
+            <iq:uses-permission id="SensorHistory"/>
+            <iq:uses-permission id="UserProfile"/>
+        </iq:permissions>
+
+        <!-- Supported languages. -->
+        <iq:languages>
+            <iq:language>eng</iq:language>
+        </iq:languages>
+    </iq:application>
+</iq:manifest>
