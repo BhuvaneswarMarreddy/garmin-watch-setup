@@ -29,6 +29,8 @@ class VenuWatchFaceView extends WatchUi.WatchFace {
     private var _layerSec as Number = -1;            // the second _layer was drawn for
     private var _lastSec as Number = -1;
     private var _secStartMs as Number = 0;           // System.getTimer() when the second changed
+    private var _tex as BitmapType?;                 // loaded dial texture (Dial Texture setting)
+    private var _texId as Number = 0;
 
     function initialize() {
         WatchFace.initialize();
@@ -182,7 +184,7 @@ class VenuWatchFaceView extends WatchUi.WatchFace {
             var step = clock.min % 4;
             var ox = (step == 1 || step == 2) ? 2 : 0;
             var oy = (step >= 2) ? 2 : 0;
-            drawStatic(dc, cx + ox, cy + oy, radius, clock, tones);
+            drawStatic(dc, cx + ox, cy + oy, radius, clock, tones, false);   // no texture: 10% rule
             drawCap(dc, cx + ox, cy + oy, tones);
             return;
         }
@@ -191,12 +193,12 @@ class VenuWatchFaceView extends WatchUi.WatchFace {
         // into an offscreen layer once and copied on every sweep frame.
         var layer = getLayer(dc);
         if (layer == null) {
-            drawStatic(dc, cx, cy, radius, clock, tones);
+            drawStatic(dc, cx, cy, radius, clock, tones, true);
         } else {
             if (_layerSec != clock.sec) {
                 var ldc = layer.getDc();
                 if (ldc has :setAntiAlias) { ldc.setAntiAlias(true); }
-                drawStatic(ldc, cx, cy, radius, clock, tones);
+                drawStatic(ldc, cx, cy, radius, clock, tones, true);
                 _layerSec = clock.sec;
             }
             dc.drawBitmap(0, 0, layer);
@@ -238,11 +240,14 @@ class VenuWatchFaceView extends WatchUi.WatchFace {
         return bmp as BufferedBitmap?;
     }
 
-    // Black dial, title, date window, hour + minute hands.
+    // Dial (black, or the optional texture), markers, title, date, gauge, hour + minute hands.
     private function drawStatic(dc as Dc, cx as Number, cy as Number, radius as Number,
-            clock as System.ClockTime, tones as Array<Number>) as Void {
+            clock as System.ClockTime, tones as Array<Number>, textured as Boolean) as Void {
         dc.setColor(Graphics.COLOR_BLACK, Graphics.COLOR_BLACK);
         dc.clear();
+        if (textured) {
+            drawTexture(dc);
+        }
 
         var markers = getBoolSetting("HourMarkers", false);
         if (markers) {
@@ -318,6 +323,34 @@ class VenuWatchFaceView extends WatchUi.WatchFace {
         dc.drawText(x, y, font, text, CENTER);
     }
 
+    // Dial Texture: 0 off, 1 mottled washi, 2 snowfall, 3 birch bark. The images are the
+    // "Bold" level; Texture Strength tints them darker (Subtle 35%, Medium 55%, Strong 75%).
+    private function drawTexture(dc as Dc) as Void {
+        var id = getNumberSetting("DialTexture", 0);
+        if (id != _texId) {
+            _tex = null;   // free the old one before loading the next
+            _texId = id;
+            if (id == 1) {
+                _tex = WatchUi.loadResource(Rez.Drawables.TexWashi) as BitmapType;
+            } else if (id == 2) {
+                _tex = WatchUi.loadResource(Rez.Drawables.TexSnowfall) as BitmapType;
+            } else if (id == 3) {
+                _tex = WatchUi.loadResource(Rez.Drawables.TexBirch) as BitmapType;
+            }
+        }
+        var tex = _tex;
+        if (tex == null) {
+            return;
+        }
+        var tints = [0x595959, 0x8C8C8C, 0xBFBFBF];
+        var strength = getNumberSetting("TextureStrength", 1);
+        if (strength >= 0 && strength < 3 && (dc has :drawBitmap2)) {
+            dc.drawBitmap2(0, 0, tex, {:tintColor => tints[strength]});
+        } else {
+            dc.drawBitmap(0, 0, tex);
+        }
+    }
+
     // Slim faceted batons in the hands' metal, doubled at 12; the 3 starts outside the date.
     private function drawMarkers(dc as Dc, cx as Number, cy as Number, radius as Number,
             tones as Array<Number>) as Void {
@@ -349,21 +382,21 @@ class VenuWatchFaceView extends WatchUi.WatchFace {
         }
     }
 
-    // Battery "power reserve": a small arc on its own pivot below the centre (between 7
-    // and 8), the hand running from empty (down-left) to full (upper left), plus the
-    // watch's own estimate of hours left.
+    // Battery "power reserve": a small arc on its own pivot toward 7 o'clock, sitting
+    // between the 7 and 8 markers; the hand runs from empty (toward 7:40) to full (toward
+    // 11), plus the watch's own estimate of hours left.
     private function drawReserve(dc as Dc, cx as Number, cy as Number, radius as Number,
             tones as Array<Number>) as Void {
         var stats = System.getSystemStats();
-        var px = cx;
-        var py = cy + (radius * 0.36).toNumber();
+        var px = cx - (radius * 0.18).toNumber();    // 0.36R out along 7 o'clock (210 deg)
+        var py = cy + (radius * 0.312).toNumber();
         var r = radius * 0.19;
 
-        // Arc + ticks. drawArc counts degrees anticlockwise from 3 o'clock: 200..300 on the
-        // clock face is 250 -> 150 clockwise.
+        // Arc + ticks. drawArc counts degrees anticlockwise from 3 o'clock: 230..330 on the
+        // clock face is 220 -> 120 clockwise.
         dc.setColor(mixColor(tones[1], tones[0], 0.45), Graphics.COLOR_TRANSPARENT);
         dc.setPenWidth(2);
-        dc.drawArc(px, py, r.toNumber(), Graphics.ARC_CLOCKWISE, 250, 150);
+        dc.drawArc(px, py, r.toNumber(), Graphics.ARC_CLOCKWISE, 220, 120);
         for (var i = 0; i <= 8; i++) {
             var a = reserveAngle(i * 12.5);
             var dx = Math.sin(a);

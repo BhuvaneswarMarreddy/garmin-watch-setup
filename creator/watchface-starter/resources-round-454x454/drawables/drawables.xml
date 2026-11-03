@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<drawables>
+    <!-- Optional dial textures at the "Bold" level, already dithered to the screen's 16-bit
+         colour by tools/make_textures.py; the watch tints them darker for weaker strengths. -->
+    <bitmap id="TexWashi" filename="tex_washi.png" dithering="none" packingFormat="png" />
+    <bitmap id="TexSnowfall" filename="tex_snowfall.png" dithering="none" packingFormat="png" />
+    <bitmap id="TexBirch" filename="tex_birch.png" dithering="none" packingFormat="png" />
+</drawables>

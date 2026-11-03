@@ -15,6 +15,8 @@
     <property id="DateStyle"   type="number">0</property>   <!-- 0 Classic gold, 1 Steel bevel, 2 White wheel, 3 Frameless -->
     <property id="HourMarkers" type="boolean">false</property>
     <property id="BatteryReserve" type="boolean">false</property>
+    <property id="DialTexture" type="number">0</property>   <!-- 0 Off, 1 Mottled washi, 2 Snowfall, 3 Birch bark -->
+    <property id="TextureStrength" type="number">1</property>   <!-- 0 Subtle, 1 Medium, 2 Strong, 3 Bold -->
     <property id="ShowSeconds" type="boolean">true</property>
     <property id="ShowSteps"   type="boolean">false</property>
     <property id="ShowBattery" type="boolean">true</property>

@@ -35,6 +35,16 @@
     <string id="DateFrameless">Frameless</string>
     <string id="HourMarkersTitle">Hour Markers</string>
     <string id="BatteryReserveTitle">Battery Reserve Gauge</string>
+    <string id="DialTextureTitle">Dial Texture</string>
+    <string id="TexOff">Off (plain black)</string>
+    <string id="TexWashi">Mottled washi</string>
+    <string id="TexSnowfall">Snowfall</string>
+    <string id="TexBirch">Birch bark</string>
+    <string id="TextureStrengthTitle">Texture Strength</string>
+    <string id="StrengthSubtle">Subtle</string>
+    <string id="StrengthMedium">Medium</string>
+    <string id="StrengthStrong">Strong</string>
+    <string id="StrengthBold">Bold</string>
     <string id="ShowSecondsTitle">Show Seconds (when awake)</string>
     <string id="ShowStepsTitle">Show Steps</string>
     <string id="ShowBatteryTitle">Show Battery</string>
