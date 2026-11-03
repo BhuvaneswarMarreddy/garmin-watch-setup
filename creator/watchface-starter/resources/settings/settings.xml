@@ -47,6 +47,23 @@
         <settingConfig type="boolean"/>
     </setting>
 
+    <setting propertyKey="@Properties.DateStyle" title="@Strings.DateStyleTitle">
+        <settingConfig type="list">
+            <listEntry value="0">@Strings.DateClassic</listEntry>
+            <listEntry value="1">@Strings.DateBevel</listEntry>
+            <listEntry value="2">@Strings.DateWheel</listEntry>
+            <listEntry value="3">@Strings.DateFrameless</listEntry>
+        </settingConfig>
+    </setting>
+
+    <setting propertyKey="@Properties.HourMarkers" title="@Strings.HourMarkersTitle">
+        <settingConfig type="boolean"/>
+    </setting>
+
+    <setting propertyKey="@Properties.BatteryReserve" title="@Strings.BatteryReserveTitle">
+        <settingConfig type="boolean"/>
+    </setting>
+
     <setting propertyKey="@Properties.ShowSeconds" title="@Strings.ShowSecondsTitle">
         <settingConfig type="boolean"/>
     </setting>

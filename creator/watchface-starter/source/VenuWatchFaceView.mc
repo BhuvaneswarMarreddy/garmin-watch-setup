@@ -244,10 +244,15 @@ class VenuWatchFaceView extends WatchUi.WatchFace {
         dc.setColor(Graphics.COLOR_BLACK, Graphics.COLOR_BLACK);
         dc.clear();
 
+        var markers = getBoolSetting("HourMarkers", false);
+        if (markers) {
+            drawMarkers(dc, cx, cy, radius, tones);
+        }
+
         // Custom title near the top — text, size and visibility all from settings.
         if (getBoolSetting("ShowTitle", true)) {
             var title = getStringSetting("Title", "B H U V I");
-            var nameY = cy - (radius * 0.80).toNumber();
+            var nameY = cy - (radius * (markers ? 0.52 : 0.80)).toNumber();   // under the 12 baton
             var titleSize = getNumberSetting("TitleSize", 18);
             if (titleSize < 8)  { titleSize = 8; }
             if (titleSize > 40) { titleSize = 40; }
@@ -270,19 +275,131 @@ class VenuWatchFaceView extends WatchUi.WatchFace {
             var dateFont = Graphics.getVectorFont({:face => "RobotoRegular", :size => 26});
             if (dateFont == null) { dateFont = Graphics.FONT_MEDIUM; }
             var dateCX = cx + (radius * 0.60).toNumber();
-            drawWindow(dc, dateCX, cy, 44, compH, dateNum, dateFont);
+            drawWindow(dc, dateCX, cy, 44, compH, dateNum, dateFont, getNumberSetting("DateStyle", 0), tones);
+        }
+
+        if (getBoolSetting("BatteryReserve", false)) {
+            drawReserve(dc, cx, cy, radius, tones);
         }
 
         drawHands(dc, cx, cy, radius, clock, tones[0], tones[1]);
     }
 
+    // Date Style: 0 classic gold frame, 1 steel bevel, 2 white date wheel, 3 frameless.
     private function drawWindow(dc as Dc, x as Number, y as Number, w as Number, h as Number,
-            text as String, font as FontType) as Void {
-        dc.setColor(GOLD, Graphics.COLOR_TRANSPARENT);
-        dc.setPenWidth(2);
-        dc.drawRoundedRectangle(x - w / 2, y - h / 2, w, h, 4);
-        dc.setColor(Graphics.COLOR_WHITE, Graphics.COLOR_TRANSPARENT);
+            text as String, font as FontType, style as Number, tones as Array<Number>) as Void {
+        var light = tones[0];
+        var dark = tones[1];
+        var ink = Graphics.COLOR_WHITE;
+        var l = x - w / 2;
+        var t = y - h / 2;
+        if (style == 1) {
+            // Faceted frame in the hands' metal: lit top-left edge, shaded bottom-right edge.
+            dc.setColor(mixColor(dark, light, 0.35), Graphics.COLOR_TRANSPARENT);
+            dc.fillRoundedRectangle(l - 2, t - 2, w + 4, h + 4, 3);
+            dc.setColor(mixColor(dark, light, 0.95), Graphics.COLOR_TRANSPARENT);
+            dc.fillPolygon([[l - 2, t + h + 2], [l - 2, t - 2], [l + w + 2, t - 2],
+                [l + w - 2, t + 2], [l + 2, t + 2], [l + 2, t + h - 2]]);
+            dc.setColor(Graphics.COLOR_BLACK, Graphics.COLOR_TRANSPARENT);
+            dc.fillRectangle(l + 2, t + 2, w - 4, h - 4);
+        } else if (style == 2) {
+            // White date wheel behind a thin polished frame.
+            dc.setColor(mixColor(dark, light, 0.6), Graphics.COLOR_TRANSPARENT);
+            dc.fillRoundedRectangle(l - 1, t - 1, w + 2, h + 2, 3);
+            dc.setColor(0xF2F1EC, Graphics.COLOR_TRANSPARENT);
+            dc.fillRectangle(l + 2, t + 2, w - 4, h - 4);
+            ink = 0x111111;
+        } else if (style != 3) {
+            dc.setColor(GOLD, Graphics.COLOR_TRANSPARENT);
+            dc.setPenWidth(2);
+            dc.drawRoundedRectangle(l, t, w, h, 4);
+        }
+        dc.setColor(ink, Graphics.COLOR_TRANSPARENT);
         dc.drawText(x, y, font, text, CENTER);
+    }
+
+    // Slim faceted batons in the hands' metal, doubled at 12; the 3 starts outside the date.
+    private function drawMarkers(dc as Dc, cx as Number, cy as Number, radius as Number,
+            tones as Array<Number>) as Void {
+        for (var h = 0; h < 12; h++) {
+            var a = h * Math.PI / 6.0;
+            if (h == 0) {
+                drawBaton(dc, cx, cy, a - 0.03, radius * 0.70, radius * 0.93, radius * 0.017, tones);
+                drawBaton(dc, cx, cy, a + 0.03, radius * 0.70, radius * 0.93, radius * 0.017, tones);
+            } else {
+                drawBaton(dc, cx, cy, a, radius * ((h == 3) ? 0.76 : 0.72), radius * 0.93, radius * 0.016, tones);
+            }
+        }
+    }
+
+    // One baton: two halves split along its length, lit like the hands.
+    private function drawBaton(dc as Dc, cx as Number, cy as Number, angle as Numeric,
+            r0 as Numeric, r1 as Numeric, hw as Numeric, tones as Array<Number>) as Void {
+        var dx = Math.sin(angle);
+        var dy = -Math.cos(angle);
+        var k = facetShade(angle.toFloat());
+        for (var side = 1; side >= -1; side -= 2) {
+            dc.setColor(mixColor(tones[1], tones[0], (side == 1) ? k : 1.0 - k), Graphics.COLOR_TRANSPARENT);
+            dc.fillPolygon([
+                handPt(cx, cy, dx, dy, r0, 0.0),
+                handPt(cx, cy, dx, dy, r1, 0.0),
+                handPt(cx, cy, dx, dy, r1, hw * side),
+                handPt(cx, cy, dx, dy, r0, hw * side)
+            ]);
+        }
+    }
+
+    // Battery "power reserve": a small arc on its own pivot below the centre (between 7
+    // and 8), the hand running from empty (down-left) to full (upper left), plus the
+    // watch's own estimate of hours left.
+    private function drawReserve(dc as Dc, cx as Number, cy as Number, radius as Number,
+            tones as Array<Number>) as Void {
+        var stats = System.getSystemStats();
+        var px = cx;
+        var py = cy + (radius * 0.36).toNumber();
+        var r = radius * 0.19;
+
+        // Arc + ticks. drawArc counts degrees anticlockwise from 3 o'clock: 200..300 on the
+        // clock face is 250 -> 150 clockwise.
+        dc.setColor(mixColor(tones[1], tones[0], 0.45), Graphics.COLOR_TRANSPARENT);
+        dc.setPenWidth(2);
+        dc.drawArc(px, py, r.toNumber(), Graphics.ARC_CLOCKWISE, 250, 150);
+        for (var i = 0; i <= 8; i++) {
+            var a = reserveAngle(i * 12.5);
+            var dx = Math.sin(a);
+            var dy = -Math.cos(a);
+            var len = (i % 4 == 0) ? 7 : 4;
+            dc.setPenWidth((i % 4 == 0) ? 2 : 1);
+            var p0 = handPt(px, py, dx, dy, r + 2, 0.0);
+            var p1 = handPt(px, py, dx, dy, r + 2 + len, 0.0);
+            dc.drawLine(p0[0], p0[1], p1[0], p1[1]);
+        }
+
+        // Faceted hand + pivot.
+        var ang = reserveAngle(stats.battery);
+        var hx = Math.sin(ang);
+        var hy = -Math.cos(ang);
+        var k = facetShade(ang);
+        for (var side = 1; side >= -1; side -= 2) {
+            dc.setColor(mixColor(tones[1], tones[0], (side == 1) ? k : 1.0 - k), Graphics.COLOR_TRANSPARENT);
+            dc.fillPolygon([
+                handPt(px, py, hx, hy, r * 0.92, 0.0),
+                handPt(px, py, hx, hy, 0.0, radius * 0.012 * side),
+                handPt(px, py, hx, hy, -radius * 0.03, 0.0)
+            ]);
+        }
+        dc.setColor(mixColor(tones[1], tones[0], 0.6), Graphics.COLOR_TRANSPARENT);
+        dc.fillCircle(px, py, 4);
+
+        // Hours left (the watch's estimate), or the plain percentage if it has none.
+        var label = stats.battery.toNumber().format("%d") + "%";
+        if ((stats has :batteryInDays) && stats.batteryInDays != null) {
+            label = (stats.batteryInDays * 24).toNumber().format("%d") + "h";
+        }
+        var small = Graphics.getVectorFont({:face => "RobotoRegular", :size => 14});
+        dc.setColor(0x8E949C, Graphics.COLOR_TRANSPARENT);
+        dc.drawText(px + 10, py, (small != null) ? small : Graphics.FONT_XTINY, label,
+            Graphics.TEXT_JUSTIFY_LEFT | Graphics.TEXT_JUSTIFY_VCENTER);
     }
 
     // Hour + minute hands. The minute hand creeps with the seconds, like a real movement.
