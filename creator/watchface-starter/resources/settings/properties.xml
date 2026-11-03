@@ -6,13 +6,11 @@
 -->
 <properties>
     <property id="FaceStyle"   type="number">1</property>   <!-- 0 = Digital, 1 = Analog -->
-    <property id="HandStyle"   type="number">0</property>   <!-- 0 = Outline, 1 = Filled -->
-    <property id="HandColor"   type="number">0</property>   <!-- 0 Ivory, 1 Gold, 2 White, 3 Rose Gold -->
+    <property id="HandColor"   type="number">4</property>   <!-- 0 Ivory, 1 Gold, 2 White, 3 Rose Gold, 4 Silver -->
     <property id="AccentColor" type="number">0</property>   <!-- index into the color list -->
     <property id="Title"       type="string">B H U V I</property>  <!-- editable title text -->
     <property id="TitleSize"   type="number">18</property>  <!-- title font size (8-40) -->
     <property id="ShowTitle"   type="boolean">true</property>
-    <property id="ShowDay"     type="boolean">true</property>
     <property id="ShowDate"    type="boolean">true</property>
     <property id="ShowSeconds" type="boolean">true</property>
     <property id="ShowSteps"   type="boolean">false</property>

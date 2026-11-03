@@ -19,19 +19,13 @@
         </settingConfig>
     </setting>
 
-    <setting propertyKey="@Properties.HandStyle" title="@Strings.HandStyleTitle">
-        <settingConfig type="list">
-            <listEntry value="0">@Strings.StyleOutline</listEntry>
-            <listEntry value="1">@Strings.StyleFilled</listEntry>
-        </settingConfig>
-    </setting>
-
     <setting propertyKey="@Properties.HandColor" title="@Strings.HandColorTitle">
         <settingConfig type="list">
             <listEntry value="0">@Strings.ColorIvory</listEntry>
             <listEntry value="1">@Strings.ColorGold</listEntry>
             <listEntry value="2">@Strings.ColorWhite</listEntry>
             <listEntry value="3">@Strings.ColorRoseGold</listEntry>
+            <listEntry value="4">@Strings.ColorSilver</listEntry>
         </settingConfig>
     </setting>
 
@@ -46,10 +40,6 @@
     </setting>
 
     <setting propertyKey="@Properties.ShowTitle" title="@Strings.ShowTitleTitle">
-        <settingConfig type="boolean"/>
-    </setting>
-
-    <setting propertyKey="@Properties.ShowDay" title="@Strings.ShowDayTitle">
         <settingConfig type="boolean"/>
     </setting>
 
