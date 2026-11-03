@@ -5,6 +5,7 @@ import Toybox.Math;
 import Toybox.System;
 import Toybox.Time;
 import Toybox.Time.Gregorian;
+import Toybox.Timer;
 import Toybox.WatchUi;
 import Toybox.ActivityMonitor;
 
@@ -15,9 +16,19 @@ class VenuWatchFaceView extends WatchUi.WatchFace {
 
     // Justify text to the center both horizontally and vertically.
     private const CENTER = Graphics.TEXT_JUSTIFY_CENTER | Graphics.TEXT_JUSTIFY_VCENTER;
+    private const GOLD = 0xD4AF37;     // title + date border
+
+    // Sweep frame interval: ~20 steps a second. Raise it if the watch can't keep up.
+    private const FRAME_MS = 50;
 
     // True while the watch is awake (high-power). In low power we draw less.
     private var _isAwake as Boolean = true;
+
+    private var _timer as Timer.Timer?;              // drives the sweep while awake
+    private var _layer as BufferedBitmapReference?;  // everything except the seconds hand
+    private var _layerSec as Number = -1;            // the second _layer was drawn for
+    private var _lastSec as Number = -1;
+    private var _secStartMs as Number = 0;           // System.getTimer() when the second changed
 
     function initialize() {
         WatchFace.initialize();
@@ -29,7 +40,8 @@ class VenuWatchFaceView extends WatchUi.WatchFace {
     function onShow() as Void {
     }
 
-    // While awake this is called ~once per second; in low-power once per minute.
+    // The system calls this ~once per second while awake and once per minute in
+    // low power; while awake the sweep timer also calls it every FRAME_MS.
     function onUpdate(dc as Dc) as Void {
         var width = dc.getWidth();
         var height = dc.getHeight();
@@ -44,18 +56,42 @@ class VenuWatchFaceView extends WatchUi.WatchFace {
         var showBattery= getBoolSetting("ShowBattery", true);
         var lowPower   = !_isAwake;
 
+        // Watch faces may only animate while awake, so the sweep runs only then.
+        if (!lowPower && faceStyle == 1 && showSecond) {
+            if (_timer == null) {
+                var t = new Timer.Timer();
+                t.start(method(:onFrame), FRAME_MS, true);
+                _timer = t;
+            }
+        } else {
+            stopSweep();
+        }
+
+        if (faceStyle == 1) {
+            drawAnalog(dc, cx, cy, showSecond, lowPower);
+            return;
+        }
+
         // Black background — essential for AMOLED battery life and always-on.
         dc.setColor(Graphics.COLOR_WHITE, Graphics.COLOR_BLACK);
         dc.clear();
+        drawDigital(dc, cx, cy, height, accent, showSecond, showSteps, showBattery, lowPower);
+    }
 
-        if (faceStyle == 1) {
-            drawAnalog(dc, cx, cy, accent, showSecond, lowPower);
-        } else {
-            drawDigital(dc, cx, cy, height, accent, showSecond, showSteps, showBattery, lowPower);
+    function onFrame() as Void {
+        WatchUi.requestUpdate();
+    }
+
+    private function stopSweep() as Void {
+        var t = _timer;
+        if (t != null) {
+            t.stop();
+            _timer = null;
         }
     }
 
     function onHide() as Void {
+        stopSweep();
     }
 
     function onExitSleep() as Void {
@@ -65,6 +101,7 @@ class VenuWatchFaceView extends WatchUi.WatchFace {
 
     function onEnterSleep() as Void {
         _isAwake = false;
+        stopSweep();
         WatchUi.requestUpdate();
     }
 
@@ -127,31 +164,85 @@ class VenuWatchFaceView extends WatchUi.WatchFace {
 
     // ----------------------------------------------------------------- ANALOG
 
-    private function drawAnalog(dc as Dc, cx as Number, cy as Number, accent as Number,
+    private function drawAnalog(dc as Dc, cx as Number, cy as Number,
             showSecond as Boolean, lowPower as Boolean) as Void {
 
         if (dc has :setAntiAlias) {
-            dc.setAntiAlias(true);   // smooth, non-jagged hand edges
+            dc.setAntiAlias(true);   // smooth, non-jagged edges
         }
-
         var radius = (cx < cy) ? cx : cy;
         var clock = System.getClockTime();
-        var hourAngle = ((clock.hour % 12) + clock.min / 60.0) * (Math.PI / 6.0);
-        var minAngle  = clock.min * (Math.PI / 30.0);
+        // [light, dark] metal for every hand and the cap, from the Hand Color setting.
+        var tones = handTones(getNumberSetting("HandColor", 4));
 
-        // Hand style + colour from settings.
-        var filled = (getNumberSetting("HandStyle", 0) == 1);
-        var handColor = resolveHandColor(getNumberSetting("HandColor", 0));
-
-        // Always-on mode: SAME hands and size as awake, just dimmed to grey
-        // (the slim shape keeps lit pixels low, which suits the AMOLED).
+        // Always-on: the same face minus the seconds hand (the watch redraws only once a
+        // minute here, so it would sit frozen). Nudged 2 px each minute in a square so no
+        // pixel stays lit for long (AMOLED burn-in rule).
         if (lowPower) {
-            drawStyledHand(dc, cx, cy, hourAngle, radius * 0.50, radius * 0.12, 0.40, 7, Graphics.COLOR_LT_GRAY, filled);
-            drawStyledHand(dc, cx, cy, minAngle,  radius * 0.80, radius * 0.12, 0.40, 6, Graphics.COLOR_LT_GRAY, filled);
-            dc.setColor(Graphics.COLOR_LT_GRAY, Graphics.COLOR_TRANSPARENT);
-            dc.fillCircle(cx, cy, 4);
+            var step = clock.min % 4;
+            var ox = (step == 1 || step == 2) ? 2 : 0;
+            var oy = (step >= 2) ? 2 : 0;
+            drawStatic(dc, cx + ox, cy + oy, radius, clock, tones);
+            drawCap(dc, cx + ox, cy + oy, tones);
             return;
         }
+
+        // Everything but the seconds hand changes at most once a second, so it is drawn
+        // into an offscreen layer once and copied on every sweep frame.
+        var layer = getLayer(dc);
+        if (layer == null) {
+            drawStatic(dc, cx, cy, radius, clock, tones);
+        } else {
+            if (_layerSec != clock.sec) {
+                var ldc = layer.getDc();
+                if (ldc has :setAntiAlias) { ldc.setAntiAlias(true); }
+                drawStatic(ldc, cx, cy, radius, clock, tones);
+                _layerSec = clock.sec;
+            }
+            dc.drawBitmap(0, 0, layer);
+        }
+
+        if (showSecond) {
+            var nowMs = System.getTimer();
+            if (clock.sec != _lastSec) {
+                _lastSec = clock.sec;
+                _secStartMs = nowMs;
+            }
+            var sec = clock.sec + secFraction(nowMs, _secStartMs);
+            drawSecondsHand(dc, cx, cy, radius, sec * (Math.PI / 30.0), tones[0], tones[1]);
+        }
+
+        drawCap(dc, cx, cy, tones);
+    }
+
+    // Centre cap over the hands, in the hands' metal: ring, polished cap, dark pin.
+    private function drawCap(dc as Dc, x as Number, y as Number, tones as Array<Number>) as Void {
+        dc.setColor(mixColor(tones[1], tones[0], 0.5), Graphics.COLOR_TRANSPARENT);
+        dc.fillCircle(x, y, 5);
+        dc.setColor(mixColor(tones[1], tones[0], 0.88), Graphics.COLOR_TRANSPARENT);
+        dc.fillCircle(x, y, 3);
+        dc.setColor(mixColor(0x000000, tones[1], 0.45), Graphics.COLOR_TRANSPARENT);
+        dc.fillCircle(x, y, 1);
+    }
+
+    // The offscreen layer lives in the graphics pool, which may purge it; recreate on demand.
+    private function getLayer(dc as Dc) as BufferedBitmap? {
+        var ref = _layer;
+        var bmp = (ref != null) ? ref.get() : null;
+        if (bmp == null && (Graphics has :createBufferedBitmap)) {
+            ref = Graphics.createBufferedBitmap({:width => dc.getWidth(), :height => dc.getHeight()});
+            _layer = ref;
+            _layerSec = -1;
+            bmp = ref.get();
+        }
+        return bmp as BufferedBitmap?;
+    }
+
+    // Black dial, title, date window, hour + minute hands.
+    private function drawStatic(dc as Dc, cx as Number, cy as Number, radius as Number,
+            clock as System.ClockTime, tones as Array<Number>) as Void {
+        dc.setColor(Graphics.COLOR_BLACK, Graphics.COLOR_BLACK);
+        dc.clear();
 
         // Custom title near the top — text, size and visibility all from settings.
         if (getBoolSetting("ShowTitle", true)) {
@@ -161,7 +252,7 @@ class VenuWatchFaceView extends WatchUi.WatchFace {
             if (titleSize < 8)  { titleSize = 8; }
             if (titleSize > 40) { titleSize = 40; }
             var nameFont = Graphics.getVectorFont({:face => "RobotoRegular", :size => titleSize});
-            dc.setColor(0xD4AF37, Graphics.COLOR_TRANSPARENT);
+            dc.setColor(GOLD, Graphics.COLOR_TRANSPARENT);
             if (nameFont != null) {
                 dc.drawText(cx, nameY, nameFont, title, CENTER);
             } else {
@@ -169,127 +260,120 @@ class VenuWatchFaceView extends WatchUi.WatchFace {
             }
         }
 
-        // Day / date complications (Day-Date style) — each toggle-able.
+        // Date window — toggle-able.
         var now = Gregorian.info(Time.now(), Time.FORMAT_MEDIUM);
         var compH = 38;
 
-        // Date number window at 3 o'clock (Rolex Datejust / Cyclops style).
+        // Date number window at 3 o'clock.
         if (getBoolSetting("ShowDate", true)) {
             var dateNum = now.day.format("%02d");
             var dateFont = Graphics.getVectorFont({:face => "RobotoRegular", :size => 26});
             if (dateFont == null) { dateFont = Graphics.FONT_MEDIUM; }
             var dateCX = cx + (radius * 0.60).toNumber();
-            var boxW = 44;
-            dc.setColor(0xD4AF37, Graphics.COLOR_TRANSPARENT);
-            dc.setPenWidth(2);
-            dc.drawRoundedRectangle(dateCX - boxW / 2, cy - compH / 2, boxW, compH, 4);
-            dc.setColor(Graphics.COLOR_WHITE, Graphics.COLOR_TRANSPARENT);
-            dc.drawText(dateCX, cy, dateFont, dateNum, CENTER);
+            drawWindow(dc, dateCX, cy, 44, compH, dateNum, dateFont);
         }
 
-        // Day-of-week window at 9 o'clock.
-        if (getBoolSetting("ShowDay", true)) {
-            var dayStr = (now.day_of_week as String).toUpper();
-            var dayFont = Graphics.getVectorFont({:face => "RobotoRegular", :size => 22});
-            if (dayFont == null) { dayFont = Graphics.FONT_SMALL; }
-            var dayCX = cx - (radius * 0.60).toNumber();
-            var dtw = dc.getTextWidthInPixels(dayStr, dayFont);
-            if (dtw <= 0) { dtw = 44; }
-            var dayW = dtw + 16;
-            dc.setColor(0xD4AF37, Graphics.COLOR_TRANSPARENT);
-            dc.setPenWidth(2);
-            dc.drawRoundedRectangle(dayCX - dayW / 2, cy - compH / 2, dayW, compH, 4);
-            dc.setColor(Graphics.COLOR_WHITE, Graphics.COLOR_TRANSPARENT);
-            dc.drawText(dayCX, cy, dayFont, dayStr, CENTER);
-        }
-
-        // Hour & minute hands — elegant pointed (lance) hands; colour and the
-        // Outline/Filled look both come from settings.
-        drawStyledHand(dc, cx, cy, hourAngle, radius * 0.50, radius * 0.12, 0.40, 7, handColor, filled);
-        drawStyledHand(dc, cx, cy, minAngle,  radius * 0.80, radius * 0.12, 0.40, 6, handColor, filled);
-
-        // Second hand — thin GOLD sweep with a small tail (only if enabled).
-        if (showSecond) {
-            var secAngle = clock.sec * (Math.PI / 30.0);
-            dc.setColor(0xD4AF37, Graphics.COLOR_TRANSPARENT);
-            dc.setPenWidth(2);
-            drawLineHand(dc, cx, cy, secAngle, radius * 0.85);
-            drawLineHand(dc, cx, cy, secAngle + Math.PI, radius * 0.18);
-        }
-
-        // Center hub — small gold cap with a black pinhole (simple).
-        dc.setColor(0xD4AF37, Graphics.COLOR_TRANSPARENT);
-        dc.fillCircle(cx, cy, 5);
-        dc.setColor(Graphics.COLOR_BLACK, Graphics.COLOR_TRANSPARENT);
-        dc.fillCircle(cx, cy, 2);
+        drawHands(dc, cx, cy, radius, clock, tones[0], tones[1]);
     }
 
-    // Simple, elegant OUTLINED pointed (lance) hand — a thin hollow outline:
-    // sharp tip, widest at the shoulder, tapering to a point at the tail.
-    private function drawOutlinedHand(dc as Dc, cx as Number, cy as Number, angle as Float,
-            length as Float, tail as Float, shoulderFrac as Float, halfWidth as Number,
-            color as Number, penW as Number) as Void {
+    private function drawWindow(dc as Dc, x as Number, y as Number, w as Number, h as Number,
+            text as String, font as FontType) as Void {
+        dc.setColor(GOLD, Graphics.COLOR_TRANSPARENT);
+        dc.setPenWidth(2);
+        dc.drawRoundedRectangle(x - w / 2, y - h / 2, w, h, 4);
+        dc.setColor(Graphics.COLOR_WHITE, Graphics.COLOR_TRANSPARENT);
+        dc.drawText(x, y, font, text, CENTER);
+    }
+
+    // Hour + minute hands. The minute hand creeps with the seconds, like a real movement.
+    // All sizes are fractions of the radius, measured off the reference dial.
+    private function drawHands(dc as Dc, cx as Number, cy as Number, radius as Number,
+            clock as System.ClockTime, light as Number, dark as Number) as Void {
+        var min = clock.min + clock.sec / 60.0;
+        var hourAngle = ((clock.hour % 12) + min / 60.0) * (Math.PI / 6.0);
+        drawBladeHand(dc, cx, cy, hourAngle, radius * 0.618, radius * 0.037, radius * 0.025, 0.75,
+            radius * 0.217, light, dark);
+        drawBladeHand(dc, cx, cy, min * (Math.PI / 30.0), radius * 0.948, radius * 0.034, radius * 0.016, 0.855,
+            radius * 0.205, light, dark);
+        dc.setColor(mixColor(dark, light, 0.7), Graphics.COLOR_TRANSPARENT);
+        dc.fillCircle(cx, cy, 6);
+    }
+
+    // Sharp-edged blade hand: widest at the centre and tapering to a two-facet spear
+    // point, with a flat polished top between two bevels and a short pointed tail. The
+    // bevel facing the light (upper left) is bright, the other grey; they swap as it turns.
+    private function drawBladeHand(dc as Dc, cx as Number, cy as Number, angle as Float,
+            length as Float, hubW as Float, pointW as Float, pointFrac as Float, tail as Float,
+            light as Number, dark as Number) as Void {
         var dx = Math.sin(angle);
         var dy = -Math.cos(angle);
-        var px = -dy;   // unit perpendicular to the hand direction
-        var py = dx;
-        var shoulder = length * shoulderFrac;
-        var tipX = cx + length * dx;
-        var tipY = cy + length * dy;
-        var tailX = cx - tail * dx;
-        var tailY = cy - tail * dy;
-        var slX = cx + shoulder * dx - halfWidth * px;
-        var slY = cy + shoulder * dy - halfWidth * py;
-        var srX = cx + shoulder * dx + halfWidth * px;
-        var srY = cy + shoulder * dy + halfWidth * py;
+        var k = facetShade(angle);
+        var pointAt = length * pointFrac;   // where the spear point begins
+        var tip = handPt(cx, cy, dx, dy, length, 0.0);
+        var root = handPt(cx, cy, dx, dy, -tail, 0.0);
 
-        dc.setColor(color, Graphics.COLOR_TRANSPARENT);
-        dc.setPenWidth(penW);
-        dc.drawLine(tipX, tipY, srX, srY);   // tip -> right shoulder
-        dc.drawLine(srX, srY, tailX, tailY); // right shoulder -> tail
-        dc.drawLine(tailX, tailY, slX, slY); // tail -> left shoulder
-        dc.drawLine(slX, slY, tipX, tipY);   // left shoulder -> tip
+        for (var side = 1; side >= -1; side -= 2) {
+            dc.setColor(mixColor(dark, light, (side == 1) ? k : 1.0 - k), Graphics.COLOR_TRANSPARENT);
+            dc.fillPolygon([
+                tip,
+                handPt(cx, cy, dx, dy, pointAt, pointW * side),
+                handPt(cx, cy, dx, dy, 0.0, hubW * side),
+                handPt(cx, cy, dx, dy, -tail * 0.45, hubW * 0.85 * side),
+                root
+            ]);
+        }
+
+        // Flat polished top, 42% of the local width, stopping where the point begins.
+        var start = length * 0.10;
+        var startW = (hubW + (pointW - hubW) * start / pointAt) * 0.42;
+        dc.setColor(mixColor(dark, light, 0.88), Graphics.COLOR_TRANSPARENT);
+        dc.fillPolygon([
+            handPt(cx, cy, dx, dy, start, startW),
+            handPt(cx, cy, dx, dy, pointAt, pointW * 0.42),
+            handPt(cx, cy, dx, dy, pointAt, -pointW * 0.42),
+            handPt(cx, cy, dx, dy, start, -startW)
+        ]);
+
+        // Ridge down the point.
+        var ridge = handPt(cx, cy, dx, dy, pointAt, 0.0);
+        dc.setColor(mixColor(0x000000, dark, 0.65), Graphics.COLOR_TRANSPARENT);
+        dc.setPenWidth(1);
+        dc.drawLine(ridge[0], ridge[1], tip[0], tip[1]);
     }
 
-    // Dispatch: draw a hand filled (solid) or outlined, per the Hand Style setting.
-    private function drawStyledHand(dc as Dc, cx as Number, cy as Number, angle as Float,
-            length as Float, tail as Float, shoulderFrac as Float, halfWidth as Number,
-            color as Number, filled as Boolean) as Void {
-        if (filled) {
-            fillLanceHand(dc, cx, cy, angle, length, tail, shoulderFrac, halfWidth, color);
-        } else {
-            drawOutlinedHand(dc, cx, cy, angle, length, tail, shoulderFrac, halfWidth, color, 2);
+    // Thin needle with a broad faceted counterweight, in the hands' metal.
+    private function drawSecondsHand(dc as Dc, cx as Number, cy as Number, radius as Number,
+            angle as Float, light as Number, dark as Number) as Void {
+        var dx = Math.sin(angle);
+        var dy = -Math.cos(angle);
+        var len = radius * 0.972;
+        var tail = radius * 0.347;
+        var w = radius * 0.025;
+        var k = facetShade(angle);
+
+        dc.setColor(mixColor(dark, light, 0.5), Graphics.COLOR_TRANSPARENT);
+        dc.fillPolygon([
+            handPt(cx, cy, dx, dy, len, radius * 0.006),
+            handPt(cx, cy, dx, dy, len, -radius * 0.006),
+            handPt(cx, cy, dx, dy, 0.0, -radius * 0.0095),
+            handPt(cx, cy, dx, dy, 0.0, radius * 0.0095)
+        ]);
+        for (var side = 1; side >= -1; side -= 2) {
+            dc.setColor(mixColor(dark, light, (side == 1) ? k : 1.0 - k), Graphics.COLOR_TRANSPARENT);
+            dc.fillPolygon([
+                handPt(cx, cy, dx, dy, 0.0, 0.0),
+                handPt(cx, cy, dx, dy, 0.0, w * 0.5 * side),
+                handPt(cx, cy, dx, dy, -radius * 0.08, w * side),
+                handPt(cx, cy, dx, dy, -tail * 0.92, w * side),
+                handPt(cx, cy, dx, dy, -tail, 0.0)
+            ]);
         }
     }
 
-    // Filled (solid) pointed lance hand.
-    private function fillLanceHand(dc as Dc, cx as Number, cy as Number, angle as Float,
-            length as Float, tail as Float, shoulderFrac as Float, halfWidth as Number,
-            color as Number) as Void {
-        var dx = Math.sin(angle);
-        var dy = -Math.cos(angle);
-        var px = -dy;
-        var py = dx;
-        var shoulder = length * shoulderFrac;
-        var tipX = cx + length * dx;
-        var tipY = cy + length * dy;
-        var tailX = cx - tail * dx;
-        var tailY = cy - tail * dy;
-        var pts = [
-            [tipX, tipY],
-            [cx + shoulder * dx + halfWidth * px, cy + shoulder * dy + halfWidth * py],
-            [tailX, tailY],
-            [cx + shoulder * dx - halfWidth * px, cy + shoulder * dy - halfWidth * py]
-        ];
-        dc.setColor(color, Graphics.COLOR_TRANSPARENT);
-        dc.fillPolygon(pts);
-    }
-
-    // Simple line from center outward (used for low-power hands + second hand).
-    private function drawLineHand(dc as Dc, cx as Number, cy as Number, angle as Float, length as Float) as Void {
-        var x = cx + length * Math.sin(angle);
-        var y = cy - length * Math.cos(angle);
-        dc.drawLine(cx, cy, x, y);
+    // Point t along the hand from the centre and w across it (positive = clockwise side).
+    private function handPt(cx as Number, cy as Number, dx as Numeric, dy as Numeric,
+            t as Numeric, w as Numeric) as Point2D {
+        return [cx + t * dx - w * dy, cy + t * dy + w * dx];
     }
 
     // ---------------------------------------------------------------- HELPERS
@@ -304,13 +388,14 @@ class VenuWatchFaceView extends WatchUi.WatchFace {
         }
     }
 
-    // Hand colour options: 0 Ivory, 1 Gold, 2 White, 3 Rose Gold.
-    private function resolveHandColor(idx as Number) as Number {
+    // [light facet, dark facet] per Hand Color: 0 Ivory, 1 Gold, 2 White, 3 Rose Gold, 4 Silver.
+    private function handTones(idx as Number) as Array<Number> {
         switch (idx) {
-            case 1:  return 0xD4AF37;            // gold
-            case 2:  return Graphics.COLOR_WHITE;
-            case 3:  return 0xB76E79;            // rose gold
-            default: return 0xEDE6D6;            // ivory
+            case 0:  return [0xF4EEDF, 0x8C846F];
+            case 1:  return [0xF5DD96, 0x8F6C27];
+            case 2:  return [0xFFFFFF, 0x9A9DA3];
+            case 3:  return [0xF2C6B8, 0x8A5246];
+            default: return [0xF3F4F5, 0x7D8085];   // neutral steel
         }
     }
 
