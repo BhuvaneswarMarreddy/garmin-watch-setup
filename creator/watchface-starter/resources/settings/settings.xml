@@ -47,6 +47,41 @@
         <settingConfig type="boolean"/>
     </setting>
 
+    <setting propertyKey="@Properties.DateStyle" title="@Strings.DateStyleTitle">
+        <settingConfig type="list">
+            <listEntry value="0">@Strings.DateClassic</listEntry>
+            <listEntry value="1">@Strings.DateBevel</listEntry>
+            <listEntry value="2">@Strings.DateWheel</listEntry>
+            <listEntry value="3">@Strings.DateFrameless</listEntry>
+        </settingConfig>
+    </setting>
+
+    <setting propertyKey="@Properties.HourMarkers" title="@Strings.HourMarkersTitle">
+        <settingConfig type="boolean"/>
+    </setting>
+
+    <setting propertyKey="@Properties.BatteryReserve" title="@Strings.BatteryReserveTitle">
+        <settingConfig type="boolean"/>
+    </setting>
+
+    <setting propertyKey="@Properties.DialTexture" title="@Strings.DialTextureTitle">
+        <settingConfig type="list">
+            <listEntry value="0">@Strings.TexOff</listEntry>
+            <listEntry value="1">@Strings.TexWashi</listEntry>
+            <listEntry value="2">@Strings.TexSnowfall</listEntry>
+            <listEntry value="3">@Strings.TexBirch</listEntry>
+        </settingConfig>
+    </setting>
+
+    <setting propertyKey="@Properties.TextureStrength" title="@Strings.TextureStrengthTitle">
+        <settingConfig type="list">
+            <listEntry value="0">@Strings.StrengthSubtle</listEntry>
+            <listEntry value="1">@Strings.StrengthMedium</listEntry>
+            <listEntry value="2">@Strings.StrengthStrong</listEntry>
+            <listEntry value="3">@Strings.StrengthBold</listEntry>
+        </settingConfig>
+    </setting>
+
     <setting propertyKey="@Properties.ShowSeconds" title="@Strings.ShowSecondsTitle">
         <settingConfig type="boolean"/>
     </setting>

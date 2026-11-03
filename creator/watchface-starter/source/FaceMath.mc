@@ -28,3 +28,12 @@ function mixColor(dark as Number, light as Number, k as Float) as Number {
     }
     return out;
 }
+
+// Battery power-reserve hand angle (radians, clockwise from 12 around its own pivot):
+// 0 % points toward 7:40 (230 deg), 100 % toward 11 (330 deg); clamped.
+function reserveAngle(pct as Numeric) as Float {
+    var p = pct.toFloat();
+    if (p < 0.0)   { p = 0.0; }
+    if (p > 100.0) { p = 100.0; }
+    return ((230.0 + p) * Math.PI / 180.0).toFloat();
+}

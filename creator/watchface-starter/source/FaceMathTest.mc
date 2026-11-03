@@ -28,3 +28,14 @@ function mixColorBlendsEachChannel(logger as Logger) as Boolean {
     Test.assertEqual(mixColor(0x204060, 0x6080A0, 0.5), 0x406080);
     return true;
 }
+
+(:test)
+function reserveAngleRunsFromEmptyToFullAndClamps(logger as Logger) as Boolean {
+    var deg = 180.0 / Math.PI;
+    Test.assert((reserveAngle(0) * deg - 230.0).abs() < 0.01);    // empty: toward 7:40
+    Test.assert((reserveAngle(50) * deg - 280.0).abs() < 0.01);
+    Test.assert((reserveAngle(100) * deg - 330.0).abs() < 0.01);  // full: toward 11
+    Test.assert((reserveAngle(-5) * deg - 230.0).abs() < 0.01);   // clamped
+    Test.assert((reserveAngle(140) * deg - 330.0).abs() < 0.01);
+    return true;
+}
